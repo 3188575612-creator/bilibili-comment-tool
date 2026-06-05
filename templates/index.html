@@ -1,0 +1,3161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站评论工具</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128172;</text></svg>">
+    <style>
+        :root {
+            --bg-page: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-hover: #f8fafc;
+            --bg-subtle: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --success: #059669;
+            --success-bg: #ecfdf5;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --info: #0891b2;
+            --info-bg: #ecfeff;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+            --radius-sm: 6px;
+            --radius: 8px;
+            --radius-lg: 12px;
+        }
+
+        /* 深色模式 */
+        html.dark {
+            --bg-page: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --bg-subtle: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #334155;
+            --border-light: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --primary-light: #1e3a5f;
+            --success: #34d399;
+            --success-bg: #064e3b;
+            --danger: #f87171;
+            --danger-bg: #7f1d1d;
+            --warning: #fbbf24;
+            --warning-bg: #78350f;
+            --info: #22d3ee;
+            --info-bg: #164e63;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+            background: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* ── 顶部导航栏 ── */
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .brand-icon {
+            width: 32px; height: 32px;
+            background: var(--primary);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+            font-size: 1rem;
+        }
+        .brand-sub {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 400;
+            margin-left: 8px;
+        }
+
+        /* 顶部用户信息 */
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .topbar-user .user-face {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+        .topbar-user .user-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .topbar-user .user-level {
+            font-size: 0.65rem;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .topbar-user .btn-login {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            border-radius: var(--radius-sm);
+        }
+
+        /* ── 主体容器 ── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* ── 统计栏 ── */
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s;
+        }
+        .stat-chip:hover { box-shadow: var(--shadow); }
+        .stat-chip .stat-icon {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .stat-chip.status-on .stat-icon { background: var(--success-bg); }
+        .stat-chip.status-off .stat-icon { background: var(--danger-bg); }
+        .stat-chip.status-history .stat-icon { background: var(--primary-light); }
+        .stat-chip .stat-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .stat-chip .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ── 卡片 ── */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+        .card-body { padding: 24px; }
+        .card-section + .card-section {
+            border-top: 1px solid var(--border-light);
+            padding-top: 24px;
+            margin-top: 24px;
+        }
+
+        /* ── Tab ── */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            position: relative;
+            transition: color 0.2s;
+            font-weight: 500;
+        }
+        .tab:hover { color: var(--text-primary); }
+        .tab.active {
+            color: var(--primary);
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 12px; right: 12px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── 表单 ── */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(37 99 235 / 0.08);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+        }
+        .form-row .form-group { flex: 1; margin-bottom: 0; }
+
+        /* ── 按钮 ── */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: inherit;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) { background: #047857; }
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+        .btn-secondary {
+            background: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: #e2e8f0;
+            color: var(--text-primary);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+        }
+        .btn-ghost:hover:not(:disabled) {
+            background: var(--bg-subtle);
+            color: var(--text-primary);
+        }
+
+        /* ── 搜索区 ── */
+        .search-area {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+            margin-bottom: 16px;
+        }
+        .search-area input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+        }
+        .search-area input[type="number"] {
+            width: 90px;
+            text-align: center;
+        }
+
+        /* 筛选区 */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-subtle);
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-item label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .filter-item input,
+        .filter-item select {
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            background: var(--bg-card);
+        }
+        .filter-item input:focus,
+        .filter-item select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .filter-item input[type="number"] {
+            width: 90px;
+        }
+        .filter-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+        }
+
+        /* ── 复选框 ── */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 16px; height: 16px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* ── 视频列表 ── */
+        .video-list {
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .video-list::-webkit-scrollbar { width: 5px; }
+        .video-list::-webkit-scrollbar-track { background: transparent; }
+        .video-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .video-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            transition: all 0.15s;
+            cursor: pointer;
+            background: var(--bg-card);
+            animation: fadeInUp 0.25s ease-out;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .video-item:hover {
+            border-color: #cbd5e1;
+            box-shadow: var(--shadow-sm);
+        }
+        .video-item.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .video-item.commented {
+            opacity: 0.55;
+            background: #fafafa;
+        }
+        .video-item.excluded {
+            opacity: 0.35;
+            background: var(--danger-bg);
+            border-color: #fecaca;
+        }
+        .video-item.excluded .video-title {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+        .video-item.hidden-excluded { display: none; }
+
+        .video-checkbox {
+            margin-right: 12px;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+        .video-checkbox input {
+            width: 18px; height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .video-cover-wrapper {
+            position: relative;
+            flex-shrink: 0;
+            margin-right: 14px;
+            cursor: pointer;
+        }
+        .video-cover {
+            width: 136px; height: 85px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            background: var(--bg-subtle);
+            display: block;
+            transition: transform 0.2s;
+        }
+        .video-cover:hover { transform: scale(1.03); }
+        .video-cover-fallback {
+            width: 136px; height: 85px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-subtle);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+        .video-duration-badge {
+            position: absolute;
+            bottom: 4px; right: 4px;
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .video-info { flex: 1; min-width: 0; }
+        .video-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .video-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        .video-meta span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background: var(--bg-subtle);
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .video-description {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .video-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        .video-link:hover { text-decoration: underline; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+        .badge-orange {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+        .badge-red {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+        .excluded-badge {
+            cursor: pointer;
+        }
+        .excluded-badge:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ── 结果信息栏 ── */
+        .result-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 14px;
+            background: var(--bg-subtle);
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+        }
+        .result-tags {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .result-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .result-tag.primary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .result-tag.warn {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+        .result-tag.danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+        .select-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* ── 评论区 ── */
+        .comment-area {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-light);
+        }
+        .comment-mode-switch {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--bg-subtle);
+            border-radius: var(--radius-sm);
+            width: fit-content;
+            margin-bottom: 16px;
+        }
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .mode-option:hover { color: var(--text-primary); }
+        .mode-option input[type="radio"] { display: none; }
+        .mode-option:has(input:checked) {
+            background: var(--bg-card);
+            color: var(--primary);
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .template-hint {
+            padding: 12px 16px;
+            background: var(--primary-light);
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .template-hint strong {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* ── 进度条 ── */
+        .progress-container { margin: 16px 0; display: none; }
+        .progress-container.show { display: block; }
+        .progress-bar-bg {
+            width: 100%;
+            height: 22px;
+            background: var(--bg-subtle);
+            border-radius: 11px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 11px;
+            transition: width 0.3s ease;
+            min-width: 0;
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .progress-current {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* ── 提示框 ── */
+        .result-box {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-top: 14px;
+            font-size: 0.9rem;
+        }
+        .result-success {
+            background: var(--success-bg);
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .result-error {
+            background: var(--danger-bg);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .result-warning {
+            background: var(--warning-bg);
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        .result-info {
+            background: var(--info-bg);
+            color: #155e75;
+            border: 1px solid #a5f3fc;
+        }
+
+        /* ── 加载 ── */
+        .loading { display: none; text-align: center; padding: 30px; }
+        .loading.show { display: block; }
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+        .loading p { color: var(--text-muted); font-size: 0.9rem; }
+
+        /* ── 模板管理 ── */
+        .template-list {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .template-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            background: var(--bg-card);
+            transition: background 0.15s;
+        }
+        .template-item:hover { background: var(--bg-hover); }
+        .template-text {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .template-index {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-right: 12px;
+            min-width: 24px;
+            font-weight: 500;
+        }
+        .template-delete {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .template-delete:hover {
+            color: var(--danger);
+            background: var(--danger-bg);
+        }
+        .template-input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .template-input-row input { flex: 1; }
+
+        /* ── 已排除视频 ── */
+        .excluded-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            background: var(--danger-bg);
+            transition: background 0.15s;
+        }
+        .excluded-item:hover { background: #fee2e2; }
+        .excluded-item-info { flex: 1; min-width: 0; }
+        .excluded-item-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .excluded-item-bvid {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+        .excluded-item-remove {
+            background: white;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 5px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .excluded-item-remove:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ── 历史记录 ── */
+        .history-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-subtle);
+            border-radius: var(--radius);
+            align-items: flex-end;
+        }
+        .history-filter-bar .filter-field {
+            flex: 1;
+            min-width: 180px;
+        }
+        .history-filter-bar .filter-field label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 4px;
+        }
+        .history-filter-bar input {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+        }
+        .history-filter-bar input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .history-item {
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            background: var(--bg-card);
+            transition: box-shadow 0.15s;
+        }
+        .history-item:hover { box-shadow: var(--shadow-sm); }
+        .history-thumb {
+            width: 120px; height: 68px;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--bg-subtle);
+        }
+        .history-thumb img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .history-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+        .history-meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+        .history-records {
+            padding-top: 10px;
+            border-top: 1px solid var(--border-light);
+        }
+        .history-record {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            padding: 3px 0;
+        }
+
+        /* ── 批量结果 ── */
+        .batch-result {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-top: 14px;
+        }
+        .batch-result-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            gap: 10px;
+        }
+        .batch-result-item:last-child { border-bottom: none; }
+        .batch-status {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+        .batch-status.success { background: var(--success-bg); color: var(--success); }
+        .batch-status.failed { background: var(--danger-bg); color: var(--danger); }
+        .batch-status.skipped { background: var(--warning-bg); color: var(--warning); }
+        .batch-title { flex: 1; font-size: 0.9rem; color: var(--text-primary); }
+        .batch-message { color: var(--text-muted); font-size: 0.8rem; }
+        .batch-variant { font-size: 0.78rem; color: var(--primary); background: var(--primary-light); padding: 4px 10px; border-radius: 6px; margin-top: 4px; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* ── 登录设置 ── */
+        .qr-card {
+            background: var(--primary-light);
+            border: 1px solid #bfdbfe;
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .qr-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .qr-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+        .qr-placeholder {
+            width: 180px; height: 180px;
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border: 1px dashed var(--border);
+        }
+        .qr-image {
+            display: block;
+            width: 180px; height: 180px;
+            margin: 0 auto;
+            border-radius: var(--radius-sm);
+        }
+
+        /* ── 空状态 ── */
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 48px 20px;
+        }
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* ── 页脚提示 ── */
+        .hint-text {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 6px;
+        }
+
+        /* ── Modal 弹窗 ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.15s ease-out;
+        }
+        .modal-overlay.show { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        .modal-box {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            width: 420px;
+            max-width: 92vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.2s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 0;
+        }
+        .modal-header h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .modal-close {
+            width: 32px; height: 32px;
+            border: none;
+            background: var(--bg-subtle);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .modal-close:hover {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+        .modal-body { padding: 20px 24px 24px; }
+
+        /* ── 预览弹窗扩展 ── */
+        .preview-modal-box {
+            width: 520px;
+            max-width: 94vw;
+        }
+        .preview-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            background: var(--bg-subtle);
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+        }
+        .preview-meta-item { display: flex; align-items: center; gap: 4px; }
+        .preview-meta-label { color: var(--text-muted); }
+        .preview-meta-value { font-weight: 600; color: var(--text-primary); }
+        .preview-video-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+        }
+        .preview-video-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.85rem;
+        }
+        .preview-video-item:last-child { border-bottom: none; }
+        .preview-video-num {
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-subtle);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .preview-video-title {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+        .preview-video-comment {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+        }
+        .preview-comment-sample {
+            padding: 12px 14px;
+            background: var(--bg-subtle);
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+        }
+        .preview-comment-sample-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .preview-comment-sample-text {
+            color: var(--text-primary);
+            line-height: 1.6;
+            word-break: break-all;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* ── 关键词高亮 ── */
+        .highlight {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 0 2px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        /* ── 响应式 ── */
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .form-row { flex-direction: column; }
+            .search-area { flex-direction: column; }
+            .search-area input[type="number"] { width: 100%; }
+            .stats-bar { justify-content: center; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .filter-divider { display: none; }
+            .result-bar { flex-direction: column; align-items: flex-start; }
+            .history-filter-bar .filter-field { min-width: 100%; }
+            .topbar-inner { padding: 0 16px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-icon">&#128172;</div>
+                <span>B站评论工具</span>
+                <span class="brand-sub">搜索 · 评论 · 管理</span>
+            </div>
+            <div class="topbar-user" id="topbar-user-area">
+                <div id="login-btn-top">
+                    <button class="btn btn-primary btn-sm" onclick="switchToLogin()">登录</button>
+                </div>
+                <div id="user-info-top" style="display:none; align-items:center; gap:10px;">
+                    <img id="user-face-top" class="user-face" src="" alt=""
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2240%22 r=%2220%22 fill=%22%23cbd5e1%22/><ellipse cx=%2250%22 cy=%2290%22 rx=%2230%22 ry=%2220%22 fill=%22%23cbd5e1%22/></svg>'">
+                    <div style="display:flex; flex-direction:column; line-height:1.3;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span class="user-name" id="user-name-top"></span>
+                            <span class="user-level" id="user-level-top"></span>
+                        </div>
+                        <span style="font-size:0.75rem; color:var(--text-muted);" id="user-uid-top"></span>
+                        <span style="font-size:0.72rem; color:var(--primary); font-weight:500;" id="user-account-top"></span>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="switchToLogin()">切换账号</button>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="dark-mode-btn" onclick="toggleDarkMode()" title="切换深色/浅色模式" style="font-size:1.1rem; padding:4px 8px;">&#127769;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 统计栏 -->
+        <div class="stats-bar">
+            <div class="stat-chip" id="chip-status">
+                <div class="stat-icon">&#128274;</div>
+                <div>
+                    <div class="stat-value" id="status-login">未登录</div>
+                    <div class="stat-label">登录状态</div>
+                </div>
+            </div>
+            <div class="stat-chip status-history">
+                <div class="stat-icon">&#128221;</div>
+                <div>
+                    <div class="stat-value" id="status-history">0</div>
+                    <div class="stat-label">已评论视频</div>
+                </div>
+            </div>
+            <div class="stat-chip status-history">
+                <div class="stat-icon">&#128196;</div>
+                <div>
+                    <div class="stat-value" id="status-templates">0</div>
+                    <div class="stat-label">评论模板</div>
+                </div>
+            </div>
+            <div class="stat-chip status-history">
+                <div class="stat-icon">&#128683;</div>
+                <div>
+                    <div class="stat-value" id="status-excluded">0</div>
+                    <div class="stat-label">已排除视频</div>
+                </div>
+            </div>
+            <div class="stat-chip">
+                <div class="stat-icon">&#128276;</div>
+                <div>
+                    <div class="stat-value" id="status-blocked">0</div>
+                    <div class="stat-label">屏蔽词</div>
+                </div>
+            </div>
+            <div class="stat-chip">
+                <div class="stat-icon">&#128100;</div>
+                <div>
+                    <div class="stat-value" id="status-blocked-authors">0</div>
+                    <div class="stat-label">黑名单UP主</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主卡片 -->
+        <div class="card">
+            <div class="card-body">
+                <div class="tabs">
+                    <button class="tab active" data-tab="search">&#128269; 搜索评论</button>
+                    <button class="tab" data-tab="templates">&#128196; 模板管理</button>
+                    <button class="tab" data-tab="excluded">&#128683; 已排除</button>
+                    <button class="tab" data-tab="blocked">&#128276; 屏蔽词</button>
+                    <button class="tab" data-tab="history">&#128220; 评论历史</button>
+                </div>
+
+                <!-- 搜索评论 -->
+                <div id="tab-search" class="tab-content active">
+                    <!-- 搜索输入 -->
+                    <div class="search-area">
+                        <input type="text" id="search-keyword" placeholder="输入搜索关键词...">
+                        <input type="number" id="search-count" value="20" min="1" max="500" title="搜索数量">
+                        <button class="btn btn-primary" onclick="searchVideos()">
+                            <span>&#128269;</span> 搜索视频
+                        </button>
+                    </div>
+
+                    <!-- 筛选 -->
+                    <div class="filter-bar">
+                        <div class="filter-item">
+                            <label>排序</label>
+                            <select id="sort-by">
+                                <option value="default">综合排序</option>
+                                <option value="play">播放量</option>
+                                <option value="comment">评论量</option>
+                                <option value="duration_desc">时长 ↓</option>
+                                <option value="duration_asc">时长 ↑</option>
+                            </select>
+                        </div>
+                        <div class="filter-divider"></div>
+                        <div class="filter-item">
+                            <label>最低播放</label>
+                            <input type="number" id="min-play" placeholder="如 1000" min="0">
+                        </div>
+                        <div class="filter-divider"></div>
+                        <div class="filter-item">
+                            <label>时长(秒)</label>
+                            <input type="number" id="min-duration" placeholder="最短" min="0">
+                            <span style="color:var(--text-muted); font-size:0.85rem;">-</span>
+                            <input type="number" id="max-duration" placeholder="最长" min="0">
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="filter-commented" checked>
+                        <label for="filter-commented">过滤已评论的视频</label>
+                    </div>
+
+                    <div class="loading" id="search-loading">
+                        <div class="spinner"></div>
+                        <p>正在搜索...</p>
+                    </div>
+
+                    <div id="search-result" style="display:none;">
+                        <!-- 结果信息 -->
+                        <div class="result-bar">
+                            <div class="result-tags">
+                                <span class="result-tag primary">
+                                    <span id="result-count">0</span> 个视频
+                                </span>
+                                <span class="result-tag warn" id="filtered-info" style="display:none;"></span>
+                                <span class="result-tag danger" id="excluded-info" style="display:none;"></span>
+                            </div>
+                            <div class="select-actions">
+                                <button class="btn btn-secondary btn-sm" onclick="selectAll()">全选</button>
+                                <button class="btn btn-secondary btn-sm" onclick="deselectAll()">取消全选</button>
+                                <button class="btn btn-danger btn-sm" onclick="excludeSelected()" id="btn-exclude" style="display:none;">排除选中</button>
+                                <button class="btn btn-secondary btn-sm" onclick="toggleShowExcluded()" id="btn-show-excluded" style="display:none;">
+                                    <span id="show-excluded-text">显示已排除</span>
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="clearExcluded()" id="btn-clear-excluded" style="display:none;">清空排除</button>
+                            </div>
+                        </div>
+
+                        <div class="video-list" id="video-list"></div>
+
+                        <!-- 评论发送区 -->
+                        <div class="comment-area">
+                            <div class="comment-mode-switch">
+                                <label class="mode-option">
+                                    <input type="radio" name="comment-mode" value="manual" checked onchange="switchCommentMode()">
+                                    <span>&#9998; 手动输入</span>
+                                </label>
+                                <label class="mode-option">
+                                    <input type="radio" name="comment-mode" value="template" onchange="switchCommentMode()">
+                                    <span>&#127922; 随机模板 <span id="template-badge" style="background:var(--primary); color:white; padding:1px 6px; border-radius:10px; font-size:0.7rem;"></span></span>
+                                </label>
+                            </div>
+
+                            <div id="manual-mode">
+                                <div class="form-group">
+                                    <label>评论内容</label>
+                                    <textarea id="comment-text" placeholder="输入要发送的评论内容..."></textarea>
+                                </div>
+                            </div>
+
+                            <div id="template-mode" style="display:none;">
+                                <div class="template-hint">
+                                    <strong>随机模板模式</strong> — 每个视频将从模板库中随机抽取一条评论发送
+                                    <div id="template-preview" style="margin-top:6px; font-size:0.8rem; color:var(--text-muted);"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group" style="max-width:140px;">
+                                    <label>发送间隔（秒）</label>
+                                    <input type="number" id="comment-delay" value="5" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <div class="checkbox-group" style="margin-top:22px;">
+                                        <input type="checkbox" id="use-variant" checked>
+                                        <label for="use-variant">开启内容变体（防风控）</label>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="display:flex; align-items:flex-end;">
+                                    <button class="btn btn-success" onclick="sendBatchComment()" id="btn-send">
+                                        <span>&#10148;</span> 发送评论
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="hint-text">发送间隔会自动随机波动 &plusmn;30%，模拟真人行为</p>
+                        </div>
+
+                        <!-- 回复指定评论 -->
+                        <details style="margin-top:16px;">
+                            <summary style="cursor:pointer; color:var(--primary); font-weight:600; font-size:0.9rem; padding:8px 0; list-style:none;">
+                                &#128172; 回复指定评论
+                            </summary>
+                            <div style="padding:16px 0;">
+                                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                                    <div class="form-group" style="flex:1; margin-bottom:0;">
+                                        <label>视频BV号</label>
+                                        <input type="text" id="reply-bvid" placeholder="如 BV1xx411x7h7">
+                                    </div>
+                                    <div class="form-group" style="flex:1; margin-bottom:0;">
+                                        <label>评论ID (rpid)</label>
+                                        <input type="text" id="reply-rpid" placeholder="评论的rpid">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>回复内容</label>
+                                    <textarea id="reply-text" rows="2" placeholder="输入回复内容..."></textarea>
+                                </div>
+                                <button class="btn btn-primary" onclick="sendReply()">发送回复</button>
+                                <div id="reply-result" style="margin-top:10px;"></div>
+                            </div>
+                        </details>
+
+                        <!-- 进度条 -->
+                        <div class="progress-container" id="progress-container">
+                            <div style="font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">发送进度</div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+                                <div class="progress-text" id="progress-text">0 / 0</div>
+                            </div>
+                            <div class="progress-info">
+                                <span id="progress-stats">成功: 0 | 失败: 0 | 跳过: 0</span>
+                                <span class="progress-current" id="progress-current"></span>
+                            </div>
+                        </div>
+
+                        <div id="batch-result" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <!-- 模板管理 -->
+                <div id="tab-templates" class="tab-content">
+                    <p style="color:var(--text-secondary); margin-bottom:16px; font-size:0.9rem;">
+                        管理评论模板库，批量评论时可随机抽取模板发送，避免重复评论被风控。
+                    </p>
+                    <div class="template-input-row">
+                        <input type="text" id="new-template" placeholder="输入新的评论模板内容..."
+                               onkeypress="if(event.key==='Enter') addTemplate()">
+                        <button class="btn btn-primary" onclick="addTemplate()">添加</button>
+                    </div>
+                    <div id="template-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">&#128221;</div>
+                        <p>暂无模板，添加一些评论内容吧</p>
+                    </div>
+                    <div class="template-list" id="template-list"></div>
+                    <div id="template-count" style="color:var(--text-muted); font-size:0.85rem; margin-top:10px;"></div>
+                </div>
+
+                <!-- 已排除视频 -->
+                <div id="tab-excluded" class="tab-content">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <div>
+                            <h3 style="font-size:1.05rem; font-weight:600;">已排除的视频</h3>
+                            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:3px;">这些视频在搜索结果中会被自动过滤，不会参与批量评论</p>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="clearAllExcluded()" id="btn-clear-all-excluded" style="display:none;">清空全部</button>
+                    </div>
+                    <div id="excluded-empty" class="empty-state">
+                        <div class="empty-state-icon">&#128683;</div>
+                        <p>暂无排除的视频</p>
+                    </div>
+                    <div id="excluded-list" style="max-height:480px; overflow-y:auto;"></div>
+                    <div id="excluded-count" style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;"></div>
+                </div>
+
+                <!-- 屏蔽词 -->
+                <div id="tab-blocked" class="tab-content">
+                    <!-- 屏蔽词 -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <div>
+                            <h3 style="font-size:1.05rem; font-weight:600;">屏蔽词管理</h3>
+                            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:3px;">标题或描述包含屏蔽词的视频会被自动过滤</p>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="clearAllBlockedWords()" id="btn-clear-blocked" style="display:none;">清空全部</button>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-bottom:16px;">
+                        <input type="text" id="blocked-word-input" placeholder="输入屏蔽词..."
+                               style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius); font-size:0.9rem;"
+                               onkeypress="if(event.key==='Enter')addBlockedWord()">
+                        <button class="btn btn-primary btn-sm" onclick="addBlockedWord()">添加</button>
+                    </div>
+
+                    <div id="blocked-empty" class="empty-state">
+                        <div class="empty-state-icon">&#128276;</div>
+                        <p>暂无屏蔽词</p>
+                    </div>
+                    <div id="blocked-words-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    <div id="blocked-count" style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;"></div>
+
+                    <hr style="border:none; border-top:1px solid var(--border-light); margin:24px 0;">
+
+                    <!-- 黑名单UP主 -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <div>
+                            <h3 style="font-size:1.05rem; font-weight:600;">黑名单UP主</h3>
+                            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:3px;">指定UP主的视频会被自动过滤</p>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="clearAllBlockedAuthors()" id="btn-clear-authors" style="display:none;">清空全部</button>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-bottom:16px;">
+                        <input type="text" id="blocked-author-input" placeholder="输入UP主名称..."
+                               style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius); font-size:0.9rem;"
+                               onkeypress="if(event.key==='Enter')addBlockedAuthor()">
+                        <button class="btn btn-primary btn-sm" onclick="addBlockedAuthor()">添加</button>
+                    </div>
+
+                    <div id="blocked-authors-empty" class="empty-state">
+                        <div class="empty-state-icon">&#128100;</div>
+                        <p>暂无黑名单UP主</p>
+                    </div>
+                    <div id="blocked-authors-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    <div id="blocked-authors-count" style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;"></div>
+                </div>
+
+
+                <!-- 评论历史 -->
+                <div id="tab-history" class="tab-content">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <h3 style="font-size:1.05rem; font-weight:600;">评论历史记录</h3>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-ghost btn-sm" onclick="exportHistoryCSV()" title="导出CSV">&#128196; CSV</button>
+                            <button class="btn btn-ghost btn-sm" onclick="exportHistoryJSON()" title="导出JSON">&#128196; JSON</button>
+                            <button class="btn btn-danger btn-sm" onclick="clearHistory()">清空历史</button>
+                        </div>
+                    </div>
+
+                    <div class="history-filter-bar">
+                        <div class="filter-field">
+                            <label>关键词搜索</label>
+                            <input type="text" id="history-keyword" placeholder="搜索标题、BV号、评论内容..."
+                                   onkeypress="if(event.key==='Enter') loadHistory()">
+                        </div>
+                        <div style="min-width:130px;">
+                            <label style="font-size:0.78rem; font-weight:500; color:var(--text-secondary); display:block; margin-bottom:4px;">开始日期</label>
+                            <input type="date" id="history-date-from">
+                        </div>
+                        <div style="min-width:130px;">
+                            <label style="font-size:0.78rem; font-weight:500; color:var(--text-secondary); display:block; margin-bottom:4px;">结束日期</label>
+                            <input type="date" id="history-date-to">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="loadHistory()">搜索</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearHistoryFilter()">重置</button>
+                    </div>
+
+                    <div class="batch-toolbar" id="history-batch-bar" style="display:none; gap:8px; align-items:center; padding:8px 14px; background:var(--bg-subtle); border-radius:var(--radius); margin-bottom:10px;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.85rem; user-select:none;">
+                            <input type="checkbox" id="history-select-all" onchange="toggleSelectAllHistory()"> 全选
+                        </label>
+                        <span id="history-selected-count" style="color:var(--text-secondary); font-size:0.85rem;"></span>
+                        <button class="btn btn-primary btn-sm" onclick="batchCommentHistory()">批量再次评论</button>
+                    </div>
+
+                    <div id="history-count" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:10px;"></div>
+
+                    <div class="loading" id="history-loading">
+                        <div class="spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+
+                    <div id="history-list"></div>
+
+                    <div class="progress-container" id="history-progress-container" style="margin-top:16px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                            <div class="progress-bar" style="flex:1; margin-right:12px;">
+                                <div class="progress-bar-fill" id="history-progress-fill" style="width:0%"></div>
+                                <div class="progress-text" id="history-progress-text">0 / 0</div>
+                            </div>
+                            <span id="history-progress-stats" style="font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;">成功: 0 | 失败: 0 | 跳过: 0</span>
+                        </div>
+                        <div id="history-progress-current" style="font-size:0.8rem; color:var(--text-muted);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录弹窗 -->
+    <div class="modal-overlay" id="login-modal" onclick="if(event.target===this)closeLoginModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>&#128273; 登录设置</h3>
+                <button class="modal-close" onclick="closeLoginModal()" title="关闭">&#10005;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-card">
+                    <h3>&#128241; 扫码登录（推荐）</h3>
+                    <p>用B站APP扫码即可登录，无需手动获取Cookie</p>
+                    <div id="qr-login-area" style="text-align:center;">
+                        <div id="qr-image-container" style="margin:12px 0;">
+                            <div id="qr-placeholder" class="qr-placeholder">
+                                点击下方按钮生成二维码
+                            </div>
+                            <img id="qr-image" class="qr-image" style="display:none;" />
+                        </div>
+                        <div id="qr-status" style="margin:8px 0; font-size:0.9rem; color:var(--text-secondary); min-height:24px;"></div>
+                        <div style="display:flex; gap:10px; justify-content:center;">
+                            <button class="btn btn-primary" id="btn-qr-generate" onclick="generateQR()">生成二维码</button>
+                            <button class="btn btn-secondary" id="btn-qr-reset" onclick="resetQR()" style="display:none;">重新生成</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已保存账号列表 -->
+                <div style="margin-top:16px;">
+                    <h3 style="font-size:1rem; font-weight:600; margin-bottom:10px;">&#128100; 已保存账号</h3>
+                    <div id="account-list-empty" style="color:var(--text-muted); font-size:0.85rem; padding:8px 0;">暂无保存的账号</div>
+                    <div id="account-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+
+                <details style="margin-top:16px;">
+                    <summary style="cursor:pointer; color:var(--primary); font-weight:600; font-size:0.9rem; padding:8px 0; list-style:none;">
+                        &#128161; 手动输入Cookie登录（备用）
+                    </summary>
+                    <div style="padding:16px 0;">
+                        <div class="form-group">
+                            <label>账号名称（用于区分多个账号）</label>
+                            <input type="text" id="account-name" placeholder="例如：主号、小号">
+                        </div>
+                        <div class="form-group">
+                            <label>SESSDATA</label>
+                            <input type="text" id="sessdata" placeholder="从浏览器Cookie中获取">
+                        </div>
+                        <div class="form-group">
+                            <label>bili_jct</label>
+                            <input type="text" id="bili-jct" placeholder="从浏览器Cookie中获取">
+                        </div>
+                        <div class="form-group">
+                            <label>buvid3（可选）</label>
+                            <input type="text" id="buvid3" placeholder="从浏览器Cookie中获取">
+                        </div>
+                        <div style="background:var(--bg-subtle); padding:14px; border-radius:var(--radius); margin:16px 0;">
+                            <p style="font-weight:600; margin-bottom:8px; font-size:0.9rem;">获取方法：</p>
+                            <ol style="padding-left:20px; color:var(--text-secondary); line-height:1.8; font-size:0.85rem;">
+                                <li>打开B站并登录</li>
+                                <li>按 F12 打开开发者工具</li>
+                                <li>切换到 Application/存储 &rarr; Cookies</li>
+                                <li>找到 SESSDATA、bili_jct、buvid3 的值</li>
+                            </ol>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveLogin()">保存登录信息</button>
+                    </div>
+                </details>
+
+                <div id="login-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 评论发送预览弹窗 -->
+    <div class="modal-overlay" id="preview-modal" onclick="if(event.target===this)closePreviewModal()">
+        <div class="modal-box preview-modal-box">
+            <div class="modal-header">
+                <h3>&#128172; 发送预览</h3>
+                <button class="modal-close" onclick="closePreviewModal()" title="关闭">&#10005;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-meta">
+                    <div class="preview-meta-item">
+                        <span class="preview-meta-label">视频数：</span>
+                        <span class="preview-meta-value" id="preview-count">0</span>
+                    </div>
+                    <div class="preview-meta-item">
+                        <span class="preview-meta-label">模式：</span>
+                        <span class="preview-meta-value" id="preview-mode">-</span>
+                    </div>
+                    <div class="preview-meta-item">
+                        <span class="preview-meta-label">变体：</span>
+                        <span class="preview-meta-value" id="preview-variant">-</span>
+                    </div>
+                    <div class="preview-meta-item">
+                        <span class="preview-meta-label">间隔：</span>
+                        <span class="preview-meta-value" id="preview-delay">-</span>
+                    </div>
+                </div>
+                <div class="preview-comment-sample">
+                    <div class="preview-comment-sample-label">评论内容预览</div>
+                    <div class="preview-comment-sample-text" id="preview-comment-text">-</div>
+                </div>
+                <div class="preview-video-list" id="preview-video-list"></div>
+                <div class="preview-actions">
+                    <button class="btn btn-secondary" onclick="closePreviewModal()">取消</button>
+                    <button class="btn btn-primary" id="preview-confirm-btn" onclick="confirmPreviewSend()">确认发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 视频详情弹窗 -->
+    <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetailModal()">
+        <div class="modal-box preview-modal-box">
+            <div class="modal-header">
+                <h3>&#127909; 视频详情</h3>
+                <button class="modal-close" onclick="closeDetailModal()" title="关闭">&#10005;</button>
+            </div>
+            <div class="modal-body" id="detail-modal-body">
+                <div style="text-align:center; padding:20px; color:var(--text-muted);">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 全局状态 ==========
+        let videos = [];
+        let selectedVideos = new Set();
+        let excludedBvids = new Map();
+        let showExcluded = false;
+        let commentTemplates = [];
+        let currentTaskId = null;
+        let progressTimer = null;
+        let previewCallback = null; // 预览确认后的回调
+        let lastSearchKeyword = ''; // 最近一次搜索关键词（用于高亮）
+        let csrfToken = ''; // CSRF Token
+
+        // 获取CSRF Token
+        async function initCsrfToken() {
+            try {
+                const res = await fetch('/api/csrf_token');
+                const data = await res.json();
+                csrfToken = data.csrf_token || '';
+            } catch (e) { console.warn('获取CSRF Token失败'); }
+        }
+        // 包装fetch自动携带CSRF header
+        const _origFetch = window.fetch;
+        window.fetch = function(url, opts = {}) {
+            if (opts.method && opts.method.toUpperCase() === 'POST' && csrfToken) {
+                opts.headers = opts.headers || {};
+                if (typeof opts.headers === 'object' && !(opts.headers instanceof Headers)) {
+                    opts.headers['X-CSRF-Token'] = csrfToken;
+                }
+            }
+            return _origFetch.call(this, url, opts);
+        };
+
+        // ========== 预览弹窗 ==========
+        function openPreviewModal(videoList, commentText, useTemplate, useVariant, delay, callback) {
+            previewCallback = callback;
+            document.getElementById('preview-count').textContent = videoList.length;
+            document.getElementById('preview-mode').textContent = useTemplate ? '随机模板' : '手动输入';
+            document.getElementById('preview-variant').textContent = useVariant ? '已开启' : '未开启';
+            document.getElementById('preview-delay').textContent = delay + '秒';
+
+            // 评论内容预览
+            let previewText = '';
+            if (useTemplate) {
+                previewText = '每条视频随机选用模板 + ' + (useVariant ? '内容变体' : '原文发送');
+            } else {
+                const base = commentText.substring(0, 40) + (commentText.length > 40 ? '...' : '');
+                if (useVariant) {
+                    // 前端模拟一条变体预览
+                    previewText = base + '\n\n【变体示例】' + simulateVariant(commentText);
+                } else {
+                    previewText = base;
+                }
+            }
+            document.getElementById('preview-comment-text').textContent = previewText;
+
+            // 视频列表（最多显示8条）
+            const listEl = document.getElementById('preview-video-list');
+            const showCount = Math.min(videoList.length, 8);
+            let html = '';
+            for (let i = 0; i < showCount; i++) {
+                const v = videoList[i];
+                html += `
+                    <div class="preview-video-item">
+                        <div class="preview-video-num">${i + 1}</div>
+                        <div class="preview-video-title" title="${v.title.replace(/"/g, '&quot;')}">${v.title}</div>
+                        <div class="preview-video-comment">${v.bvid}</div>
+                    </div>
+                `;
+            }
+            if (videoList.length > 8) {
+                html += `<div class="preview-video-item" style="justify-content:center; color:var(--text-muted);">... 还有 ${videoList.length - 8} 个视频 ...</div>`;
+            }
+            listEl.innerHTML = html;
+
+            document.getElementById('preview-modal').classList.add('show');
+        }
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.remove('show');
+            previewCallback = null;
+        }
+        function confirmPreviewSend() {
+            const cb = previewCallback;
+            closePreviewModal();
+            if (cb) cb();
+        }
+        // 前端简化版变体模拟（仅用于预览展示）
+        function simulateVariant(text) {
+            const prefixes = ['', '嗯，', '哇，', '确实，', '讲真，'];
+            const emojis = ['😊', '👍', '✨', '💪', '🔥', '❤️', ''];
+            const puncts = ['~', '！', '...', '。', '👏', ''];
+            let r = text.trim();
+            if (!r) return r;
+            const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+            if (p) r = p + r;
+            const e = emojis[Math.floor(Math.random() * emojis.length)];
+            if (e) {
+                if (Math.random() < 0.5) r = e + ' ' + r;
+                else r = r + ' ' + e;
+            }
+            const punct = puncts[Math.floor(Math.random() * puncts.length)];
+            if (punct) {
+                r = r.replace(/[。！!~～.\s]+$/, '');
+                r = r + punct;
+            }
+            return r;
+        }
+
+        // ========== Tab切换 ==========
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                if (tab.dataset.tab === 'history') loadHistory();
+                if (tab.dataset.tab === 'templates') loadTemplates();
+                if (tab.dataset.tab === 'excluded') renderExcludedList();
+                if (tab.dataset.tab === 'blocked') { loadBlockedWords(); loadBlockedAuthors(); }
+            });
+        });
+
+        document.getElementById('search-keyword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchVideos();
+        });
+
+        // ========== 加载状态 ==========
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                document.getElementById('status-login').textContent = data.logged_in ? '已登录' : '未登录';
+                document.getElementById('status-history').textContent = data.history_count;
+                if (data.blocked_authors_count !== undefined) {
+                    document.getElementById('status-blocked-authors').textContent = data.blocked_authors_count;
+                }
+
+                const chip = document.getElementById('chip-status');
+                if (data.logged_in) {
+                    chip.classList.remove('status-off');
+                    chip.classList.add('status-on');
+                    chip.querySelector('.stat-icon').innerHTML = '&#9989;';
+                } else {
+                    chip.classList.remove('status-on');
+                    chip.classList.add('status-off');
+                    chip.querySelector('.stat-icon').innerHTML = '&#128274;';
+                }
+
+                if (data.logged_in) {
+                    document.getElementById('login-btn-top').style.display = 'none';
+                    document.getElementById('user-info-top').style.display = 'flex';
+                    loadUserInfo();
+                } else {
+                    document.getElementById('login-btn-top').style.display = 'block';
+                    document.getElementById('user-info-top').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('加载状态失败:', error);
+            }
+        }
+
+        function switchToLogin() {
+            document.getElementById('login-modal').classList.add('show');
+            loadAccountList();
+        }
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.remove('show');
+        }
+        // ESC 关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLoginModal();
+                closePreviewModal();
+                closeDetailModal();
+            }
+        });
+
+        // ========== 视频详情弹窗 ==========
+        function showVideoDetail(index) {
+            const v = videos[index];
+            if (!v) return;
+            const body = document.getElementById('detail-modal-body');
+            body.innerHTML = `
+                <div style="display:flex; gap:14px; margin-bottom:16px;">
+                    <div style="width:180px; height:112px; border-radius:8px; overflow:hidden; flex-shrink:0; background:var(--bg-subtle);">
+                        ${v.pic ? `<img src="/api/proxy_image?url=${encodeURIComponent(v.pic)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-muted); font-size:2rem;">&#127909;</div>'}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <h4 style="font-size:1rem; font-weight:600; line-height:1.4; margin-bottom:8px;">${v.title}</h4>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:3px 8px; border-radius:4px;">&#128100; ${v.author}</span>
+                            <span style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:3px 8px; border-radius:4px;">&#9654; ${formatNumber(v.play_count)}</span>
+                            <span style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:3px 8px; border-radius:4px;">&#128172; ${formatNumber(v.comment_count)}</span>
+                            <span style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:3px 8px; border-radius:4px;">&#9201; ${v.duration}</span>
+                            ${v.pubdate ? `<span style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:3px 8px; border-radius:4px;">&#128197; ${formatPubdate(v.pubdate)}</span>` : ''}
+                        </div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">${v.description || '暂无描述'}</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn btn-secondary btn-sm" onclick="closeDetailModal()">关闭</button>
+                    <a href="${v.url}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;" onclick="closeDetailModal()">打开视频</a>
+                </div>
+            `;
+            document.getElementById('detail-modal').classList.add('show');
+        }
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.remove('show');
+        }
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/user_info');
+                const data = await response.json();
+                if (data.success) {
+                    let faceUrl = data.face;
+                    if (faceUrl && faceUrl.startsWith('//')) faceUrl = 'https:' + faceUrl;
+                    document.getElementById('user-face-top').src = '/api/proxy_image?url=' + encodeURIComponent(faceUrl);
+                    document.getElementById('user-name-top').textContent = data.uname;
+                    document.getElementById('user-uid-top').textContent = 'UID: ' + data.uid;
+                    document.getElementById('user-level-top').textContent = 'Lv.' + data.level;
+                }
+                // 加载当前账号名称
+                const accRes = await fetch('/api/accounts');
+                const accData = await accRes.json();
+                if (accData.success && accData.current_account_name) {
+                    document.getElementById('user-account-top').textContent = accData.current_account_name;
+                } else {
+                    document.getElementById('user-account-top').textContent = '';
+                }
+            } catch (error) {
+                console.error('加载用户信息失败:', error);
+            }
+        }
+
+        // ========== 模板管理 ==========
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates');
+                const data = await response.json();
+                if (data.success) {
+                    commentTemplates = data.templates;
+                    renderTemplateList();
+                    updateTemplateBadge();
+                    document.getElementById('status-templates').textContent = commentTemplates.length;
+                }
+            } catch (error) {
+                console.error('加载模板失败:', error);
+            }
+        }
+
+        function renderTemplateList() {
+            const list = document.getElementById('template-list');
+            const empty = document.getElementById('template-empty');
+            const count = document.getElementById('template-count');
+            if (commentTemplates.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                count.textContent = '';
+            } else {
+                empty.style.display = 'none';
+                count.textContent = '共 ' + commentTemplates.length + ' 条模板';
+                list.innerHTML = commentTemplates.map((t, i) => `
+                    <div class="template-item">
+                        <span class="template-index">#${i + 1}</span>
+                        <span class="template-text">${escapeHtml(t)}</span>
+                        <button class="template-delete" onclick="deleteTemplate(${i})" title="删除">&#10005;</button>
+                    </div>
+                `).join('');
+            }
+            updateTemplatePreview();
+        }
+
+        function updateTemplateBadge() {
+            const badge = document.getElementById('template-badge');
+            if (badge) badge.textContent = commentTemplates.length > 0 ? commentTemplates.length + '条' : '';
+        }
+
+        function updateTemplatePreview() {
+            const preview = document.getElementById('template-preview');
+            if (preview && commentTemplates.length > 0) {
+                const samples = commentTemplates.slice(0, 3).map(t => '"' + (t.length > 20 ? t.substring(0, 20) + '...' : t) + '"');
+                preview.textContent = '示例：' + samples.join('、') + (commentTemplates.length > 3 ? '...' : '');
+            } else if (preview) {
+                preview.textContent = '请先到"模板管理"添加模板';
+            }
+        }
+
+        async function addTemplate() {
+            const input = document.getElementById('new-template');
+            const text = input.value.trim();
+            if (!text) return;
+            try {
+                const response = await fetch('/api/templates/add', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    commentTemplates = data.templates;
+                    input.value = '';
+                    renderTemplateList();
+                    updateTemplateBadge();
+                    document.getElementById('status-templates').textContent = commentTemplates.length;
+                } else { alert(data.message); }
+            } catch (error) { alert('添加失败: ' + error.message); }
+        }
+
+        async function deleteTemplate(index) {
+            try {
+                const response = await fetch('/api/templates/delete', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index: index })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    commentTemplates = data.templates;
+                    renderTemplateList();
+                    updateTemplateBadge();
+                    document.getElementById('status-templates').textContent = commentTemplates.length;
+                } else { alert(data.message); }
+            } catch (error) { alert('删除失败: ' + error.message); }
+        }
+
+        function switchCommentMode() {
+            const mode = document.querySelector('input[name="comment-mode"]:checked').value;
+            document.getElementById('manual-mode').style.display = mode === 'manual' ? 'block' : 'none';
+            document.getElementById('template-mode').style.display = mode === 'template' ? 'block' : 'none';
+        }
+
+        async function sendReply() {
+            const bvid = document.getElementById('reply-bvid').value.trim();
+            const rpid = document.getElementById('reply-rpid').value.trim();
+            const text = document.getElementById('reply-text').value.trim();
+            if (!bvid || !rpid || !text) { alert('请填写BV号、评论ID和回复内容'); return; }
+            const resultDiv = document.getElementById('reply-result');
+            resultDiv.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem;">发送中...</span>';
+            try {
+                const response = await fetch('/api/reply', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bvid, rpid, text })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    resultDiv.innerHTML = '<div class="result-box result-success">回复发送成功！</div>';
+                    document.getElementById('reply-text').value = '';
+                } else {
+                    resultDiv.innerHTML = '<div class="result-box result-error">' + data.message + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="result-box result-error">发送失败: ' + error.message + '</div>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========== 进度追踪 ==========
+        function startProgressPolling(taskId) {
+            currentTaskId = taskId;
+            const container = document.getElementById('progress-container');
+            container.classList.add('show');
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-text').textContent = '0 / 0';
+            document.getElementById('progress-stats').textContent = '成功: 0 | 失败: 0 | 跳过: 0';
+            document.getElementById('progress-current').textContent = '';
+            document.getElementById('batch-result').style.display = 'none';
+
+            progressTimer = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/batch_progress/' + taskId);
+                    const data = await response.json();
+                    if (!data.success) return;
+                    const pct = data.total > 0 ? Math.round((data.current / data.total) * 100) : 0;
+                    document.getElementById('progress-fill').style.width = pct + '%';
+                    document.getElementById('progress-text').textContent = data.current + ' / ' + data.total;
+                    document.getElementById('progress-stats').textContent =
+                        '成功: ' + data.success_count + ' | 失败: ' + data.fail_count + ' | 跳过: ' + data.skip_count;
+                    document.getElementById('progress-current').textContent =
+                        data.current_title ? '正在: ' + data.current_title : '';
+
+                    if (data.finished) {
+                        clearInterval(progressTimer);
+                        progressTimer = null;
+                        currentTaskId = null;
+                        showBatchResult({
+                            results: data.results,
+                            success_count: data.success_count,
+                            fail_count: data.fail_count,
+                            skip_count: data.skip_count
+                        });
+                        const btn = document.getElementById('btn-send');
+                        btn.disabled = false;
+                        btn.textContent = '发送评论';
+                        loadStatus();
+                    }
+                } catch (error) { console.error('查询进度失败:', error); }
+            }, 1000);
+        }
+
+        // ========== 搜索视频 ==========
+        async function searchVideos() {
+            const keyword = document.getElementById('search-keyword').value.trim();
+            if (!keyword) { alert('请输入搜索关键词'); return; }
+            const filterCommented = document.getElementById('filter-commented').checked;
+            const pageSize = parseInt(document.getElementById('search-count').value) || 20;
+            const sortBy = document.getElementById('sort-by').value;
+            const minPlay = parseInt(document.getElementById('min-play').value) || 0;
+            const minDuration = parseInt(document.getElementById('min-duration').value) || 0;
+            const maxDuration = parseInt(document.getElementById('max-duration').value) || 0;
+
+            document.getElementById('search-loading').classList.add('show');
+            document.getElementById('search-result').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        keyword: keyword, page_size: pageSize, filter_commented: filterCommented,
+                        sort_by: sortBy, min_play: minPlay, min_duration: minDuration, max_duration: maxDuration
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    videos = data.videos;
+                    selectedVideos = new Set();
+                    lastSearchKeyword = keyword;
+                    document.getElementById('result-count').textContent = videos.length;
+
+                    const fi = document.getElementById('filtered-info');
+                    if (data.filtered_count > 0 && data.filtered_details) {
+                        const d = data.filtered_details;
+                        const parts = [];
+                        if (d.low_play > 0) parts.push('播放' + d.low_play);
+                        if (d.duration > 0) parts.push('时长' + d.duration);
+                        if (d.commented > 0) parts.push('已评' + d.commented);
+                        if (d.excluded > 0) parts.push('排除' + d.excluded);
+                        if (d.blocked > 0) parts.push('屏蔽词' + d.blocked);
+                        if (d.author > 0) parts.push('黑名单' + d.author);
+                        if (d.invalid_bv > 0) parts.push('无效' + d.invalid_bv);
+                        fi.textContent = '过滤' + data.filtered_count + '（' + parts.join('/') + '）';
+                        fi.style.display = 'inline-flex';
+                    } else if (data.filtered_count > 0) {
+                        fi.textContent = '过滤' + data.filtered_count;
+                        fi.style.display = 'inline-flex';
+                    } else {
+                        fi.style.display = 'none';
+                        fi.textContent = '';
+                    }
+
+                    renderVideoList();
+                    updateExcludeButtons();
+                    document.getElementById('search-result').style.display = 'block';
+                } else { alert(data.message); }
+            } catch (error) { alert('搜索失败: ' + error.message); }
+            finally { document.getElementById('search-loading').classList.remove('show'); }
+        }
+
+        // ========== 渲染视频列表 ==========
+        function renderVideoList() {
+            const list = document.getElementById('video-list');
+            list.innerHTML = videos.map((video, index) => {
+                const isExcluded = excludedBvids.has(video.bvid);
+                const isHidden = isExcluded && !showExcluded;
+                return `
+                <div class="video-item ${selectedVideos.has(index) ? 'selected' : ''} ${video.commented ? 'commented' : ''} ${isExcluded ? 'excluded' : ''} ${isHidden ? 'hidden-excluded' : ''}"
+                     onclick="toggleVideo(${index})">
+                    <div class="video-checkbox">
+                        <input type="checkbox" ${selectedVideos.has(index) ? 'checked' : ''}
+                               onclick="event.stopPropagation(); toggleVideo(${index})">
+                    </div>
+                    <div class="video-cover-wrapper" onclick="event.stopPropagation(); window.open('${video.url}', '_blank')">
+                        ${video.pic ? `<img class="video-cover" src="/api/proxy_image?url=${encodeURIComponent(video.pic)}" alt="" loading="lazy" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=video-cover-fallback>&#127909;</div>')">` : '<div class="video-cover-fallback">&#127909;</div>'}
+                        ${video.duration ? `<span class="video-duration-badge">${video.duration}</span>` : ''}
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">
+                            ${highlightText(video.title, lastSearchKeyword)}
+                            ${video.commented ? '<span class="badge badge-orange">已评论</span>' : ''}
+                            ${isExcluded ? `<span class="badge badge-red excluded-badge" onclick="event.stopPropagation(); removeExcluded('${video.bvid}')" title="点击恢复">已排除</span>` : ''}
+                        </div>
+                        <div class="video-meta">
+                            <span>&#128100; ${video.author}</span>
+                            <span>&#9654; ${formatNumber(video.play_count)}</span>
+                            <span>&#128172; ${formatNumber(video.comment_count)}</span>
+                            <span>&#128490; ${formatNumber(video.danmaku_count)}</span>
+                            <span>&#9201; ${video.duration}</span>
+                            ${video.pubdate ? `<span>&#128197; ${formatPubdate(video.pubdate)}</span>` : ''}
+                        </div>
+                        ${video.description ? `<div class="video-description">${highlightText(video.description, lastSearchKeyword)}</div>` : ''}
+                        <div style="display:flex; gap:8px; margin-top:6px;">
+                            <a href="${video.url}" target="_blank" class="video-link" onclick="event.stopPropagation()">打开视频 &rarr;</a>
+                            <button class="video-link" style="background:none; border:none; cursor:pointer; padding:0;" onclick="event.stopPropagation(); showVideoDetail(${index})">查看详情</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function toggleVideo(index) {
+            if (selectedVideos.has(index)) selectedVideos.delete(index);
+            else selectedVideos.add(index);
+            renderVideoList();
+            updateExcludeButtons();
+        }
+        function selectAll() {
+            videos.forEach((_, index) => selectedVideos.add(index));
+            renderVideoList(); updateExcludeButtons();
+        }
+        function deselectAll() {
+            selectedVideos.clear();
+            renderVideoList(); updateExcludeButtons();
+        }
+
+        // ========== 排除功能 ==========
+        function excludeSelected() {
+            if (selectedVideos.size === 0) { alert('请先选择要排除的视频'); return; }
+            selectedVideos.forEach(index => {
+                const v = videos[index];
+                excludedBvids.set(v.bvid, v.title);
+            });
+            selectedVideos.clear();
+            renderVideoList(); updateExcludeButtons(); saveExcludedBvids();
+            if (document.getElementById('tab-excluded').classList.contains('active')) renderExcludedList();
+        }
+        function removeExcluded(bvid) {
+            excludedBvids.delete(bvid);
+            renderVideoList(); updateExcludeButtons(); saveExcludedBvids();
+            if (document.getElementById('tab-excluded').classList.contains('active')) renderExcludedList();
+        }
+        function renderExcludedList() {
+            const list = document.getElementById('excluded-list');
+            const empty = document.getElementById('excluded-empty');
+            const count = document.getElementById('excluded-count');
+            const btnClear = document.getElementById('btn-clear-all-excluded');
+            if (excludedBvids.size === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                count.textContent = '';
+                btnClear.style.display = 'none';
+            } else {
+                empty.style.display = 'none';
+                count.textContent = '共 ' + excludedBvids.size + ' 个已排除视频';
+                btnClear.style.display = 'inline-flex';
+                list.innerHTML = Array.from(excludedBvids.entries()).map(([bvid, title]) => `
+                    <div class="excluded-item">
+                        <div class="excluded-item-info">
+                            <div class="excluded-item-title">${title || '(未知标题)'}</div>
+                            <div class="excluded-item-bvid">${bvid}</div>
+                        </div>
+                        <button class="excluded-item-remove" onclick="removeExcludedFromManager('${bvid}')">恢复</button>
+                        <a href="https://www.bilibili.com/video/${bvid}" target="_blank" style="margin-left:8px; color:var(--primary); font-size:0.8rem;">查看</a>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('status-excluded').textContent = excludedBvids.size;
+        }
+        function clearExcluded() {
+            excludedBvids.clear();
+            showExcluded = false;
+            document.getElementById('show-excluded-text').textContent = '显示已排除';
+            renderVideoList(); updateExcludeButtons(); saveExcludedBvids();
+        }
+        function clearAllExcluded() {
+            if (!confirm('确定要清空所有 ' + excludedBvids.size + ' 个排除的视频吗？')) return;
+            excludedBvids.clear();
+            renderExcludedList(); renderVideoList(); updateExcludeButtons(); saveExcludedBvids();
+        }
+        function removeExcludedFromManager(bvid) {
+            excludedBvids.delete(bvid);
+            renderExcludedList(); renderVideoList(); updateExcludeButtons(); saveExcludedBvids();
+        }
+        function toggleShowExcluded() {
+            showExcluded = !showExcluded;
+            document.getElementById('show-excluded-text').textContent = showExcluded ? '隐藏已排除' : '显示已排除';
+            renderVideoList();
+        }
+        function updateExcludeButtons() {
+            const hasSelected = selectedVideos.size > 0;
+            const hasExcluded = excludedBvids.size > 0;
+            document.getElementById('btn-exclude').style.display = hasSelected ? 'inline-flex' : 'none';
+            document.getElementById('btn-show-excluded').style.display = hasExcluded ? 'inline-flex' : 'none';
+            document.getElementById('btn-clear-excluded').style.display = hasExcluded ? 'inline-flex' : 'none';
+            const ei = document.getElementById('excluded-info');
+            if (hasExcluded) {
+                ei.textContent = '已排除 ' + excludedBvids.size + ' 个';
+                ei.style.display = 'inline-flex';
+            } else {
+                ei.style.display = 'none';
+            }
+        }
+
+        // ========== 屏蔽词管理 ==========
+        let blockedWords = [];
+
+        async function loadBlockedWords() {
+            try {
+                const res = await fetch('/api/blocked_words');
+                const data = await res.json();
+                if (data.success) {
+                    blockedWords = data.blocked_words;
+                    renderBlockedWords();
+                }
+            } catch (e) {}
+        }
+
+        function renderBlockedWords() {
+            const list = document.getElementById('blocked-words-list');
+            const empty = document.getElementById('blocked-empty');
+            const count = document.getElementById('blocked-count');
+            const btnClear = document.getElementById('btn-clear-blocked');
+            if (blockedWords.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                count.textContent = '';
+                btnClear.style.display = 'none';
+            } else {
+                empty.style.display = 'none';
+                count.textContent = '共 ' + blockedWords.length + ' 个屏蔽词';
+                btnClear.style.display = 'inline-flex';
+                list.innerHTML = blockedWords.map(word => `
+                    <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-subtle); border-radius:20px; font-size:0.85rem; border:1px solid var(--border);">
+                        ${word}
+                        <button onclick="removeBlockedWord('${word.replace(/'/g, "\\'")}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; padding:0 2px; line-height:1;" title="删除">&times;</button>
+                    </span>
+                `).join('');
+            }
+            document.getElementById('status-blocked').textContent = blockedWords.length;
+        }
+
+        async function addBlockedWord() {
+            const input = document.getElementById('blocked-word-input');
+            const word = input.value.trim();
+            if (!word) return;
+            try {
+                const res = await fetch('/api/blocked_words/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({word})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    blockedWords = data.blocked_words;
+                    renderBlockedWords();
+                    input.value = '';
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                alert('添加失败: ' + e.message);
+            }
+        }
+
+        async function removeBlockedWord(word) {
+            try {
+                const res = await fetch('/api/blocked_words/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({word})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    blockedWords = data.blocked_words;
+                    renderBlockedWords();
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+
+        async function clearAllBlockedWords() {
+            if (!confirm('确定要清空所有 ' + blockedWords.length + ' 个屏蔽词吗？')) return;
+            try {
+                const res = await fetch('/api/blocked_words/clear_all', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                if (data.success) {
+                    blockedWords = [];
+                    renderBlockedWords();
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                alert('清空失败: ' + e.message);
+            }
+        }
+
+        // ========== 黑名单UP主管理 ==========
+        let blockedAuthors = [];
+
+        async function loadBlockedAuthors() {
+            try {
+                const res = await fetch('/api/blocked_authors');
+                const data = await res.json();
+                if (data.success) {
+                    blockedAuthors = data.blocked_authors;
+                    renderBlockedAuthors();
+                }
+            } catch (e) {}
+        }
+
+        function renderBlockedAuthors() {
+            const list = document.getElementById('blocked-authors-list');
+            const empty = document.getElementById('blocked-authors-empty');
+            const count = document.getElementById('blocked-authors-count');
+            const btnClear = document.getElementById('btn-clear-authors');
+            if (blockedAuthors.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                count.textContent = '';
+                btnClear.style.display = 'none';
+            } else {
+                empty.style.display = 'none';
+                count.textContent = '共 ' + blockedAuthors.length + ' 个黑名单UP主';
+                btnClear.style.display = 'inline-flex';
+                list.innerHTML = blockedAuthors.map(author => `
+                    <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-subtle); border-radius:20px; font-size:0.85rem; border:1px solid var(--border);">
+                        &#128100; ${author}
+                        <button onclick="removeBlockedAuthor('${author.replace(/'/g, "\\'")}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; padding:0 2px; line-height:1;" title="删除">&times;</button>
+                    </span>
+                `).join('');
+            }
+            document.getElementById('status-blocked-authors').textContent = blockedAuthors.length;
+        }
+
+        async function addBlockedAuthor() {
+            const input = document.getElementById('blocked-author-input');
+            const author = input.value.trim();
+            if (!author) return;
+            try {
+                const res = await fetch('/api/blocked_authors/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({author})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    blockedAuthors = data.blocked_authors;
+                    renderBlockedAuthors();
+                    input.value = '';
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                alert('添加失败: ' + e.message);
+            }
+        }
+
+        async function removeBlockedAuthor(author) {
+            try {
+                const res = await fetch('/api/blocked_authors/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({author})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    blockedAuthors = data.blocked_authors;
+                    renderBlockedAuthors();
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+
+        async function clearAllBlockedAuthors() {
+            if (!confirm('确定要清空所有 ' + blockedAuthors.length + ' 个黑名单UP主吗？')) return;
+            try {
+                const res = await fetch('/api/blocked_authors/clear_all', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                if (data.success) {
+                    blockedAuthors = [];
+                    renderBlockedAuthors();
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                alert('清空失败: ' + e.message);
+            }
+        }
+
+        // ========== 发送批量评论 ==========
+        async function sendBatchComment() {
+            const mode = document.querySelector('input[name="comment-mode"]:checked').value;
+            const useTemplate = mode === 'template';
+            if (!useTemplate) {
+                const text = document.getElementById('comment-text').value.trim();
+                if (!text) { alert('请输入评论内容'); return; }
+            }
+            if (selectedVideos.size === 0) { alert('请选择至少一个视频'); return; }
+            const text = useTemplate ? '' : document.getElementById('comment-text').value.trim();
+            const delay = parseInt(document.getElementById('comment-delay').value) || 5;
+            const useVariant = document.getElementById('use-variant').checked;
+            const selectedVideoList = Array.from(selectedVideos)
+                .filter(index => !excludedBvids.has(videos[index].bvid))
+                .map(index => videos[index]);
+            if (selectedVideoList.length === 0) { alert('选中的视频都被排除了，请调整选择'); return; }
+
+            // 预览弹窗
+            openPreviewModal(selectedVideoList, text, useTemplate, useVariant, delay, async () => {
+                const btn = document.getElementById('btn-send');
+                btn.disabled = true;
+                btn.innerHTML = '<span>&#9203;</span> 发送中...';
+
+                try {
+                    const response = await fetch('/api/batch_comment', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            videos: selectedVideoList, text: text,
+                            use_template: useTemplate, use_variant: useVariant, delay: delay
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.task_id) {
+                        startProgressPolling(data.task_id);
+                    } else {
+                        alert(data.message || '发送失败');
+                        btn.disabled = false;
+                        btn.innerHTML = '<span>&#10148;</span> 发送评论';
+                    }
+                } catch (error) {
+                    alert('发送失败: ' + error.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>&#10148;</span> 发送评论';
+                }
+            });
+        }
+
+        function showBatchResult(data) {
+            const resultDiv = document.getElementById('batch-result');
+            resultDiv.style.display = 'block';
+            let html = `
+                <div class="result-box result-info">
+                    <strong>发送完成</strong>：成功 ${data.success_count} 个，失败 ${data.fail_count} 个，跳过 ${data.skip_count} 个
+                </div>
+                <div class="batch-result">
+            `;
+            data.results.forEach(result => {
+                const statusIcon = result.status === 'success' ? '&#10003;' : result.status === 'failed' ? '&#10007;' : '&#9675;';
+                const variantBadge = result.comment_used ? `<div class="batch-variant">&#128172; ${result.comment_used}</div>` : '';
+                html += `
+                    <div class="batch-result-item">
+                        <div class="batch-status ${result.status}">${statusIcon}</div>
+                        <div class="batch-title">${result.title}</div>
+                        <div class="batch-message">${result.message}</div>
+                        ${variantBadge}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+
+        // ========== 登录 ==========
+        async function saveLogin() {
+            const sessdata = document.getElementById('sessdata').value.trim();
+            const biliJct = document.getElementById('bili-jct').value.trim();
+            const buvid3 = document.getElementById('buvid3').value.trim();
+            const accountName = document.getElementById('account-name').value.trim() || '默认账号';
+            if (!sessdata || !biliJct) { alert('SESSDATA和bili_jct不能为空'); return; }
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessdata: sessdata, bili_jct: biliJct, buvid3: buvid3, account_name: accountName })
+                });
+                const data = await response.json();
+                const resultDiv = document.getElementById('login-result');
+                if (data.success) {
+                    resultDiv.innerHTML = '<div class="result-box result-success" style="margin-top:14px;">登录成功！</div>';
+                    loadStatus();
+                    loadAccountList();
+                    setTimeout(() => closeLoginModal(), 1200);
+                } else {
+                    resultDiv.innerHTML = '<div class="result-box result-error" style="margin-top:14px;">' + data.message + '</div>';
+                }
+            } catch (error) { alert('保存失败: ' + error.message); }
+        }
+
+        // ========== 多账号管理 ==========
+        async function loadAccountList() {
+            try {
+                const res = await fetch('/api/accounts');
+                const data = await res.json();
+                const list = document.getElementById('account-list');
+                const empty = document.getElementById('account-list-empty');
+                if (!data.success || !data.accounts || data.accounts.length === 0) {
+                    list.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                list.innerHTML = data.accounts.map(acc => {
+                    const isCurrent = acc.name === data.current_account_name;
+                    return `
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--bg-subtle); border-radius:var(--radius); border:1px solid ${isCurrent ? 'var(--primary)' : 'var(--border-light)'};">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            <div style="width:8px; height:8px; border-radius:50%; background:${isCurrent ? 'var(--success)' : 'var(--text-muted)'}; flex-shrink:0;"></div>
+                            <span style="font-weight:500; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${acc.name}</span>
+                            ${isCurrent ? '<span style="font-size:0.75rem; color:var(--success); background:var(--success-bg); padding:2px 6px; border-radius:4px;">当前</span>' : ''}
+                        </div>
+                        <div style="display:flex; gap:6px; flex-shrink:0;">
+                            ${!isCurrent ? `<button class="btn btn-ghost btn-sm" onclick="switchAccount('${acc.name.replace(/'/g, "\\'")}')">切换</button>` : ''}
+                            <button class="btn btn-danger btn-sm" onclick="deleteAccount('${acc.name.replace(/'/g, "\\'")}')" style="padding:4px 8px; font-size:0.75rem;">删除</button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            } catch (e) { console.error('加载账号列表失败:', e); }
+        }
+
+        async function switchAccount(name) {
+            try {
+                const res = await fetch('/api/accounts/switch', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadAccountList();
+                    loadStatus();
+                    loadUserInfo();
+                    alert('已切换到账号：' + name);
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) { alert('切换失败: ' + e.message); }
+        }
+
+        async function deleteAccount(name) {
+            if (!confirm('确定要删除账号 "' + name + '" 吗？')) return;
+            try {
+                const res = await fetch('/api/accounts/delete', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadAccountList();
+                    loadStatus();
+                    loadUserInfo();
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) { alert('删除失败: ' + e.message); }
+        }
+
+        // ========== 扫码登录 ==========
+        let qrCheckTimer = null;
+        async function generateQR() {
+            const btn = document.getElementById('btn-qr-generate');
+            btn.disabled = true; btn.textContent = '生成中...';
+            try {
+                const response = await fetch('/api/qr_login/generate', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('qr-placeholder').style.display = 'none';
+                    const qrImg = document.getElementById('qr-image');
+                    qrImg.src = 'data:image/png;base64,' + data.qr_image;
+                    qrImg.style.display = 'block';
+                    document.getElementById('qr-status').textContent = '请用B站APP扫描二维码';
+                    document.getElementById('qr-status').style.color = 'var(--primary)';
+                    btn.style.display = 'none';
+                    document.getElementById('btn-qr-reset').style.display = 'inline-flex';
+                    startQRCheck();
+                } else { alert(data.message); btn.disabled = false; btn.textContent = '生成二维码'; }
+            } catch (error) { alert('生成二维码失败: ' + error.message); btn.disabled = false; btn.textContent = '生成二维码'; }
+        }
+        function startQRCheck() {
+            if (qrCheckTimer) clearInterval(qrCheckTimer);
+            qrCheckTimer = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/qr_login/check');
+                    const data = await response.json();
+                    const statusEl = document.getElementById('qr-status');
+                    if (data.status === 'scanning') {
+                        statusEl.textContent = '已扫码，请在手机上确认登录';
+                        statusEl.style.color = 'var(--warning)';
+                    } else if (data.status === 'done') {
+                        statusEl.textContent = '登录成功！';
+                        statusEl.style.color = 'var(--success)';
+                        clearInterval(qrCheckTimer); qrCheckTimer = null;
+                        document.getElementById('login-result').innerHTML = '<div class="result-box result-success" style="margin-top:14px;">扫码登录成功！</div>';
+                        loadStatus();
+                        setTimeout(() => closeLoginModal(), 1200);
+                    } else if (data.status === 'expired') {
+                        statusEl.textContent = '二维码已过期，请重新生成';
+                        statusEl.style.color = 'var(--danger)';
+                        clearInterval(qrCheckTimer); qrCheckTimer = null;
+                        const btn = document.getElementById('btn-qr-generate');
+                        btn.style.display = 'inline-flex'; btn.disabled = false; btn.textContent = '重新生成';
+                        document.getElementById('btn-qr-reset').style.display = 'none';
+                    } else if (data.status === 'failed') {
+                        statusEl.textContent = '登录失败: ' + data.message;
+                        statusEl.style.color = 'var(--danger)';
+                        clearInterval(qrCheckTimer); qrCheckTimer = null;
+                    }
+                } catch (error) { console.error('检查扫码状态失败:', error); }
+            }, 2000);
+        }
+        function resetQR() {
+            if (qrCheckTimer) { clearInterval(qrCheckTimer); qrCheckTimer = null; }
+            document.getElementById('qr-placeholder').style.display = 'flex';
+            document.getElementById('qr-image').style.display = 'none';
+            document.getElementById('qr-status').textContent = '';
+            const btn = document.getElementById('btn-qr-generate');
+            btn.style.display = 'inline-flex'; btn.disabled = false; btn.textContent = '生成二维码';
+            document.getElementById('btn-qr-reset').style.display = 'none';
+            fetch('/api/qr_login/reset', { method: 'POST' });
+        }
+
+        // ========== 历史记录 ==========
+        async function loadHistory() {
+            document.getElementById('history-loading').classList.add('show');
+            try {
+                const keyword = document.getElementById('history-keyword').value.trim();
+                const dateFrom = document.getElementById('history-date-from').value;
+                const dateTo = document.getElementById('history-date-to').value;
+                const params = new URLSearchParams();
+                if (keyword) params.set('keyword', keyword);
+                if (dateFrom) params.set('date_from', dateFrom);
+                if (dateTo) params.set('date_to', dateTo);
+                const response = await fetch('/api/history?' + params.toString());
+                const data = await response.json();
+                const list = document.getElementById('history-list');
+                const countEl = document.getElementById('history-count');
+                if (data.history.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128220;</div><p>暂无评论历史</p></div>';
+                    countEl.textContent = keyword || dateFrom || dateTo ? '未找到匹配的记录' : '';
+                } else {
+                    countEl.textContent = keyword || dateFrom || dateTo ? '找到 ' + data.history.length + ' 条记录' : '共 ' + data.history.length + ' 条记录';
+                    list.innerHTML = data.history.map(item => {
+                        const pic = item.records.find(r => r.pic)?.pic || '';
+                        const hasPic = pic ? 'has-pic' : '';
+                        return `
+                        <div class="history-item ${hasPic}" id="history-${item.bvid}">
+                            <div style="display:flex; gap:10px;">
+                                ${pic ? `<div class="history-thumb"><img src="/api/proxy_image?url=${encodeURIComponent(pic)}" alt="封面" onerror="this.parentElement.style.display='none'"></div>` : ''}
+                                <div style="flex:1; min-width:0;">
+                                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                                        <div style="display:flex; align-items:flex-start; gap:8px; min-width:0;">
+                                            <input type="checkbox" class="history-checkbox" data-bvid="${item.bvid}" data-title="${item.title.replace(/"/g, '&quot;')}" onchange="updateHistoryBatchBar()" style="margin-top:3px; flex-shrink:0;">
+                                            <div style="min-width:0;">
+                                                <div class="history-title">${item.title}</div>
+                                                <div class="history-meta">BV: ${item.bvid} &middot; 评论 ${item.count} 次</div>
+                                            </div>
+                                        </div>
+                                        <div style="display:flex; gap:6px; flex-shrink:0;">
+                                            <button class="btn btn-primary btn-sm" onclick="commentAgain('${item.bvid}', '${item.title.replace(/'/g, "\\'")}')">再次评论</button>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteHistory('${item.bvid}')">删除</button>
+                                        </div>
+                                    </div>
+                                    <div class="history-records">
+                                        ${item.records.map(r => `<div class="history-record">[${r.time}] ${r.comment}</div>`).join('')}
+                                    </div>
+                                    <a href="https://www.bilibili.com/video/${item.bvid}" target="_blank" class="video-link" style="margin-top:8px; display:inline-block;">打开视频 &rarr;</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;}).join('');
+                }
+            } catch (error) { console.error('加载历史失败:', error); }
+            finally {
+                document.getElementById('history-loading').classList.remove('show');
+                document.getElementById('history-select-all').checked = false;
+                updateHistoryBatchBar();
+            }
+        }
+        function clearHistoryFilter() {
+            document.getElementById('history-keyword').value = '';
+            document.getElementById('history-date-from').value = '';
+            document.getElementById('history-date-to').value = '';
+            loadHistory();
+        }
+        async function deleteHistory(bvid) {
+            if (!confirm('确定要删除该视频的评论记录吗？')) return;
+            try {
+                const response = await fetch('/api/history/delete', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bvid: bvid })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const el = document.getElementById('history-' + bvid);
+                    if (el) el.remove();
+                    loadStatus();
+                    const list = document.getElementById('history-list');
+                    if (list.children.length === 0) {
+                        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128220;</div><p>暂无评论历史</p></div>';
+                    }
+                    updateHistoryBatchBar();
+                } else { alert(data.message); }
+            } catch (error) { alert('删除失败: ' + error.message); }
+        }
+        // 再次评论 - 使用自定义Modal替代原生prompt/confirm
+        function commentAgain(bvid, title) {
+            // 构建一个内嵌的确认/输入弹窗
+            const hasTemplates = commentTemplates.length > 0;
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.style.display = 'flex';
+            overlay.innerHTML = `
+                <div class="modal-box" style="max-width:480px;">
+                    <div class="modal-header">
+                        <h3>再次评论</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body" style="padding:20px;">
+                        <div style="margin-bottom:16px; padding:12px; background:var(--bg-subtle); border-radius:8px; font-size:0.9rem;">
+                            <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:4px;">目标视频</div>
+                            <div style="font-weight:600;">${title}</div>
+                        </div>
+                        ${hasTemplates ? `
+                        <div style="margin-bottom:16px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                                <input type="checkbox" id="comment-again-use-template" onchange="toggleCommentAgainMode()">
+                                使用随机模板（${commentTemplates.length}条可用）
+                            </label>
+                        </div>
+                        ` : ''}
+                        <div id="comment-again-input-area" style="margin-bottom:16px;">
+                            <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:6px;">评论内容</div>
+                            <textarea id="comment-again-text" rows="3" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:0.9rem; resize:vertical; font-family:inherit;" placeholder="输入评论内容..."></textarea>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">自动启用内容变体，每次发送内容会略有不同</div>
+                        <div style="display:flex; gap:10px; justify-content:flex-end;">
+                            <button class="btn" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                            <button class="btn btn-primary" id="comment-again-confirm-btn" onclick="confirmCommentAgain('${bvid}', '${title.replace(/'/g, "\\'")}', this.closest('.modal-overlay'))">
+                                <span>&#10148;</span> 确认发送
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+            // 聚焦输入框
+            setTimeout(() => {
+                const textarea = document.getElementById('comment-again-text');
+                if (textarea && !hasTemplates) textarea.focus();
+            }, 100);
+        }
+
+        function toggleCommentAgainMode() {
+            const useTemplate = document.getElementById('comment-again-use-template').checked;
+            const inputArea = document.getElementById('comment-again-input-area');
+            inputArea.style.display = useTemplate ? 'none' : 'block';
+        }
+
+        async function confirmCommentAgain(bvid, title, overlay) {
+            const useTemplate = document.getElementById('comment-again-use-template')?.checked || false;
+            let commentText = '';
+            if (useTemplate) {
+                commentText = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
+            } else {
+                commentText = document.getElementById('comment-again-text').value.trim();
+                if (!commentText) { alert('请输入评论内容'); return; }
+            }
+            overlay.remove();
+            try {
+                const response = await fetch('/api/comment', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bvid: bvid, text: commentText, use_variant: true })
+                });
+                const data = await response.json();
+                if (data.success) { alert('评论发送成功！'); loadHistory(); loadStatus(); }
+                else { alert('发送失败: ' + data.message); }
+            } catch (error) { alert('发送失败: ' + error.message); }
+        }
+
+        // ========== 历史批量选择 ==========
+        function getSelectedHistory() {
+            const checkboxes = document.querySelectorAll('.history-checkbox:checked');
+            return Array.from(checkboxes).map(cb => ({
+                bvid: cb.dataset.bvid,
+                title: cb.dataset.title
+            }));
+        }
+
+        function toggleSelectAllHistory() {
+            const isChecked = document.getElementById('history-select-all').checked;
+            document.querySelectorAll('.history-checkbox').forEach(cb => cb.checked = isChecked);
+            updateHistoryBatchBar();
+        }
+
+        function updateHistoryBatchBar() {
+            const selected = getSelectedHistory();
+            const bar = document.getElementById('history-batch-bar');
+            const count = document.getElementById('history-selected-count');
+            const hasItems = document.querySelectorAll('.history-checkbox').length > 0;
+            bar.style.display = hasItems ? 'flex' : 'none';
+            count.textContent = selected.length > 0 ? '已选 ' + selected.length + ' 条' : '';
+            if (selected.length === 0) {
+                document.getElementById('history-select-all').checked = false;
+            }
+        }
+
+        async function batchCommentHistory() {
+            const selected = getSelectedHistory();
+            if (selected.length === 0) { alert('请选择至少一条历史记录'); return; }
+
+            let commentText = '';
+            let useTemplate = false;
+            if (commentTemplates.length > 0) {
+                useTemplate = confirm('是否使用随机模板？\n\n确定 = 使用随机模板\n取消 = 手动输入评论');
+                if (!useTemplate) {
+                    commentText = prompt('请输入评论内容：');
+                    if (!commentText) return;
+                }
+            } else {
+                commentText = prompt('请输入评论内容：');
+                if (!commentText) return;
+            }
+
+            const delay = parseInt(document.getElementById('comment-delay')?.value || 5);
+
+            // 预览弹窗
+            openPreviewModal(selected, commentText, useTemplate, true, delay, async () => {
+                // 显示进度条
+                const container = document.getElementById('history-progress-container');
+                container.classList.add('show');
+                document.getElementById('history-progress-fill').style.width = '0%';
+                document.getElementById('history-progress-text').textContent = '0 / ' + selected.length;
+                document.getElementById('history-progress-stats').textContent = '成功: 0 | 失败: 0 | 跳过: 0';
+                document.getElementById('history-progress-current').textContent = '';
+
+                try {
+                    const response = await fetch('/api/batch_comment', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            videos: selected,
+                            text: useTemplate ? '' : commentText,
+                            use_template: useTemplate,
+                            use_variant: true,
+                            delay: delay
+                        })
+                    });
+                    const data = await response.json();
+                    if (!data.success) { alert(data.message); container.classList.remove('show'); return; }
+
+                    const taskId = data.task_id;
+                    const poll = setInterval(async () => {
+                        try {
+                            const r = await fetch('/api/batch_progress/' + taskId);
+                            const p = await r.json();
+                            if (p.success) {
+                                const pct = p.total > 0 ? (p.current / p.total * 100) : 0;
+                                document.getElementById('history-progress-fill').style.width = pct + '%';
+                                document.getElementById('history-progress-text').textContent = p.current + ' / ' + p.total;
+                                document.getElementById('history-progress-stats').textContent =
+                                    '成功: ' + p.success_count + ' | 失败: ' + p.fail_count + ' | 跳过: ' + p.skip_count;
+                                document.getElementById('history-progress-current').textContent =
+                                    p.current_title ? '正在: ' + p.current_title : '';
+                            }
+                            if (p.finished) {
+                                clearInterval(poll);
+                                setTimeout(() => container.classList.remove('show'), 3000);
+                                loadHistory();
+                                loadStatus();
+                            }
+                        } catch (e2) { clearInterval(poll); }
+                    }, 1000);
+                } catch (error) {
+                    container.classList.remove('show');
+                    alert('批量评论失败: ' + error.message);
+                }
+            });
+        }
+
+        async function clearHistory() {
+            if (!confirm('确定要清空所有评论历史吗？此操作不可恢复！')) return;
+            try {
+                const response = await fetch('/api/history/clear', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) { loadHistory(); loadStatus(); }
+            } catch (error) { alert('清空失败: ' + error.message); }
+        }
+
+        // ========== 数据导出 ==========
+        function exportHistoryCSV() {
+            const headers = ['BV号', '标题', '评论内容', '发送时间'];
+            const rows = [];
+            // 使用当前加载的历史数据
+            const cards = document.querySelectorAll('.history-card');
+            if (cards.length === 0) { alert('没有可导出的历史数据'); return; }
+            // 从API重新获取完整数据
+            fetch('/api/history').then(r => r.json()).then(data => {
+                if (!data.success || !data.history.length) { alert('没有可导出的数据'); return; }
+                data.history.forEach(item => {
+                    item.records.forEach(r => {
+                        rows.push([item.bvid, item.title, r.comment, r.time]);
+                    });
+                });
+                let csv = '\uFEFF' + headers.join(',') + '\n';
+                rows.forEach(row => {
+                    csv += row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',') + '\n';
+                });
+                downloadFile(csv, '评论历史_' + new Date().toISOString().slice(0,10) + '.csv', 'text/csv;charset=utf-8');
+            });
+        }
+
+        function exportHistoryJSON() {
+            fetch('/api/history').then(r => r.json()).then(data => {
+                if (!data.success) { alert('导出失败'); return; }
+                const json = JSON.stringify(data.history, null, 2);
+                downloadFile(json, '评论历史_' + new Date().toISOString().slice(0,10) + '.json', 'application/json');
+            });
+        }
+
+        function exportConfig() {
+            const config = {
+                templates: commentTemplates,
+                blocked_words: blockedWords,
+                blocked_authors: blockedAuthors,
+                excluded_count: excludedBvids.size
+            };
+            const json = JSON.stringify(config, null, 2);
+            downloadFile(json, 'B站工具配置_' + new Date().toISOString().slice(0,10) + '.json', 'application/json');
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function formatNumber(num) {
+            if (num >= 10000) return (num / 10000).toFixed(1) + '万';
+            return num.toLocaleString();
+        }
+
+        function formatPubdate(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp * 1000);
+            const now = new Date();
+            const diffMs = now - d;
+            const diffDays = Math.floor(diffMs / 86400000);
+            const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+            if (diffDays === 0) return '今天';
+            if (diffDays === 1) return '昨天';
+            if (diffDays < 7) return diffDays + '天前';
+            if (d.getFullYear() === now.getFullYear()) return m + '-' + day;
+            return y + '-' + m + '-' + day;
+        }
+
+        function highlightText(text, keyword) {
+            if (!keyword || !text) return text;
+            const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('(' + safeKeyword + ')', 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // ========== 排除列表持久化 ==========
+        async function loadExcludedBvids() {
+            try {
+                const response = await fetch('/api/excluded');
+                const data = await response.json();
+                if (data.success && data.excluded_list) {
+                    excludedBvids = new Map(data.excluded_list.map(item => [item.bvid, item.title]));
+                    updateExcludeButtons();
+                    document.getElementById('status-excluded').textContent = excludedBvids.size;
+                }
+            } catch (error) { console.error('加载排除列表失败:', error); }
+        }
+        async function saveExcludedBvids() {
+            try {
+                const excluded_list = Array.from(excludedBvids.entries()).map(([bvid, title]) => ({ bvid, title }));
+                await fetch('/api/excluded/save', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ excluded_list: excluded_list })
+                });
+                document.getElementById('status-excluded').textContent = excludedBvids.size;
+            } catch (error) { console.error('保存排除列表失败:', error); }
+        }
+
+        // ========== 深色模式 ==========
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('dark-mode', isDark ? '1' : '0');
+            document.getElementById('dark-mode-btn').innerHTML = isDark ? '&#9728;&#65039;' : '&#127769;';
+        }
+        // 初始化深色模式
+        (function() {
+            const saved = localStorage.getItem('dark-mode');
+            if (saved === '1' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                setTimeout(() => {
+                    const btn = document.getElementById('dark-mode-btn');
+                    if (btn) btn.innerHTML = '&#9728;&#65039;';
+                }, 0);
+            }
+        })();
+
+        // ========== 键盘快捷键 ==========
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter: 发送评论（在搜索Tab时触发批量发送）
+            if (e.ctrlKey && e.key === 'Enter') {
+                const activeTab = document.querySelector('.tab-btn.active');
+                if (activeTab && activeTab.dataset.tab === 'search') {
+                    e.preventDefault();
+                    sendBatchComment();
+                }
+            }
+            // Escape: 关闭最顶层弹窗
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal-overlay[style*="display: flex"], .modal-overlay[style*="display:flex"]');
+                if (modals.length > 0) {
+                    modals[modals.length - 1].remove();
+                }
+            }
+            // Ctrl+K: 聚焦搜索框
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                const searchInput = document.getElementById('search-keyword');
+                if (searchInput) searchInput.focus();
+            }
+        });
+
+        // ========== 统计栏自动刷新 ==========
+        // 搜索完成后、模板操作后、历史操作后自动刷新
+        const _origLoadStatus = loadStatus;
+        let _statusTimer = null;
+        function debouncedLoadStatus() {
+            if (_statusTimer) clearTimeout(_statusTimer);
+            _statusTimer = setTimeout(() => _origLoadStatus(), 500);
+        }
+
+        // 页面加载
+        initCsrfToken();
+        loadStatus();
+        loadTemplates();
+        loadExcludedBvids();
+        loadBlockedWords();
+        loadBlockedAuthors();
+    </script>
+</body>
+</html>
